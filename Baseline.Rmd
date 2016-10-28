@@ -1,0 +1,82 @@
+---
+title: "Baseline"
+author: "Gupta & Anand"
+date: "October 27, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, echo=FALSE}
+Raw <- read.csv("~/Downloads/nbt.3154-S3-raw.csv", row.names = 1)
+Nor <- read.csv("~/Downloads/nbt.3154-S3.csv", row.names = 1)
+Norm <- as.matrix(Nor)
+desc1=unlist(strsplit(rownames(Norm),"_"))
+desc=desc1[seq(1,7867,2)]
+gr4sfg=which(substr(rownames(Norm),1,5)=="4SFGA")
+gr4sf=which(substr(rownames(Norm),1,4)=="4SGA")
+gr1=which(substr(rownames(Norm),1,2)=="PS")
+gr2=which(substr(rownames(Norm),1,2)=="NP")
+gr3=which(substr(rownames(Norm),1,2)=="HF")
+colscells=c("blue","green","orange","red","purple")
+colnb=rep(0,3934)
+colnb[gr1]=1
+colnb[gr2]=2
+colnb[gr3]=3
+colnb[gr4sf]=4
+colnb[gr4sfg]=5
+typesort=rep(0,3934)
+typesort[which(nchar(desc)<5 & substr(rownames(Norm),3,3)=="A")]="sortA"
+typesort[which(nchar(desc)<5 & substr(rownames(Norm),3,3)=="B")]="sortB"
+typesort[which(nchar(desc)>4)]="sortA"
+ftable(typesort)
+celltypes=as.factor(c("PS","NP","HF","4G","4GF")[colnb])
+cellcol=colscells[colnb]
+```
+
+Compute centroids of fate types
+```{r}
+fourg <- Nor[celltypes == "4G",]
+fourgf <- Nor[celltypes == "4GF",]
+
+fourg_centroid <- colMeans(fourg)
+fourgf_centroid <- colMeans(fourgf)
+```
+
+Assign each cell to closest centroid
+```{r}
+assign <- function(profile) {
+  dist_fourg <- sqrt(sum((profile - fourg_centroid)^2))
+  dist_fourgf <- sqrt(sum((profile - fourgf_centroid)^2))
+  return(if(dist_fourg < dist_fourgf) "4G" else "4GF")
+}
+
+assignments = apply(Nor, 1, assign)
+sum(assignments == "4G")
+sum(assignments == "4GF")
+```
+
+```{r}
+endothelial <- c("Cdh5", "Erg", "HoxB4", "Sox7", "Sox17")
+erythroid <- c("Gata1", "Gfi1b", "HbbbH1", "Ikaros", "Myb", "Nfe2")
+
+fourgf_rel <- t(data.frame(fourgf_centroid))
+fourg_rel <- t(data.frame(fourg_centroid))
+
+erythroid_distance <- function(profile) {
+  return(sqrt(sum((profile - fourgf_rel[,erythroid])^2)))
+}
+
+endothelial_distance <- function(profile) {
+  return(sqrt(sum((profile - fourg_rel[,endothelial])^2)))
+}
+
+erythroid_distances <- apply(Nor[,erythroid], 1, erythroid_distance)
+endothelial_distances <- apply(Nor[,endothelial], 1, endothelial_distance)
+
+assignment_error <- (sum(erythroid_distances[assignments == "4G"]) + sum(endothelial_distances[assignments=="4GF"]))/nrow(Nor)
+non_assignment_error <- (sum(erythroid_distances[assignments == "4GF"]) + sum(endothelial_distances[assignments == "4G"]))/nrow(Nor)
+
+```
