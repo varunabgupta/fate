@@ -1,10 +1,3 @@
----
-title: "Baseline"
-author: "Gupta & Anand"
-date: "October 27, 2016"
-output: html_document
----
-
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
@@ -36,7 +29,7 @@ celltypes=as.factor(c("PS","NP","HF","4G","4GF")[colnb])
 cellcol=colscells[colnb]
 ```
 
-Compute centroids of fate types
+Compute centroids of fate types:
 ```{r}
 fourg <- Nor[celltypes == "4G",]
 fourgf <- Nor[celltypes == "4GF",]
@@ -45,38 +38,33 @@ fourg_centroid <- colMeans(fourg)
 fourgf_centroid <- colMeans(fourgf)
 ```
 
-Assign each cell to closest centroid
+Assign each cell to closest centroid:
 ```{r}
 assign <- function(profile) {
   dist_fourg <- sqrt(sum((profile - fourg_centroid)^2))
   dist_fourgf <- sqrt(sum((profile - fourgf_centroid)^2))
   return(if(dist_fourg < dist_fourgf) "4G" else "4GF")
 }
-
 assignments = apply(Nor, 1, assign)
-sum(assignments == "4G")
-sum(assignments == "4GF")
 ```
 
 ```{r}
 endothelial <- c("Cdh5", "Erg", "HoxB4", "Sox7", "Sox17")
 erythroid <- c("Gata1", "Gfi1b", "HbbbH1", "Ikaros", "Myb", "Nfe2")
-
 fourgf_rel <- t(data.frame(fourgf_centroid))
 fourg_rel <- t(data.frame(fourg_centroid))
 
 erythroid_distance <- function(profile) {
   return(sqrt(sum((profile - fourgf_rel[,erythroid])^2)))
 }
-
 endothelial_distance <- function(profile) {
   return(sqrt(sum((profile - fourg_rel[,endothelial])^2)))
 }
 
 erythroid_distances <- apply(Nor[,erythroid], 1, erythroid_distance)
 endothelial_distances <- apply(Nor[,endothelial], 1, endothelial_distance)
-
 assignment_error <- (sum(erythroid_distances[assignments == "4G"]) + sum(endothelial_distances[assignments=="4GF"]))/nrow(Nor)
 non_assignment_error <- (sum(erythroid_distances[assignments == "4GF"]) + sum(endothelial_distances[assignments == "4G"]))/nrow(Nor)
-
 ```
+
+The mean assignment error is `r assignment_error`, and the mean non-assignment error is `r non_assignment_error`. Ideally, the assignment error should be much smaller than the non-assignment error, which would indicate that a cell is much closer to its assigned centroid in terms of the transcription factors relevant to that fate than to the centroid it was not assigned to in terms of transcription factors relevant to the fate it did not achieve.
