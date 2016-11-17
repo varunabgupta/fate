@@ -35,49 +35,12 @@ class CellMDP(util.MDP):
     # in the list returned by succAndProbReward.
     def succAndProbReward(self, state, action):
         # BEGIN_YOUR_CODE (our solution is 53 lines of code, but don't worry if you deviate from this)
-        total_card_value_in_hand, next_card_index_if_peeked, deck_card_counts = state
+        gene_profile, cell_type = state
 
-        if deck_card_counts is None:
+        if cell_type == '4G' or cell_type == '4GF':
             return []
 
-        if action == 'Quit':
-            return [((total_card_value_in_hand, None, None), 1, total_card_value_in_hand)]
-
-        if action == 'Peak' and next_card_index_if_peeked is not None:
-            return []
-
-        if action == 'Take' and next_card_index_if_peeked is not None:
-            card_value = self.cardValues[next_card_index_if_peeked]
-            if total_card_value_in_hand + card_value > self.threshold:
-                return [((total_card_value_in_hand + card_value, None, None), 1, 0)]
-            else:
-                deck_card_counts_list = list(deck_card_counts)
-                deck_card_counts_list[next_card_index_if_peeked] -= 1
-                if sum(deck_card_counts_list) > 0:
-                    return [((total_card_value_in_hand + card_value, None, tuple(deck_card_counts_list)), 1, 0)]
-                else:
-                    return [((total_card_value_in_hand + card_value, None, None), 1, total_card_value_in_hand + card_value)]
-
-        total_num_cards = float(sum(deck_card_counts))
-        probabilities = [deck_card_counts[card_index]/total_num_cards for card_index in range(len(self.cardValues))]
-        if action == 'Peek' and next_card_index_if_peeked is None:
-            return [((total_card_value_in_hand, peeked_index, deck_card_counts), probabilities[peeked_index], -1 * self.peekCost) for peeked_index in range(len(self.cardValues)) if probabilities[peeked_index] > 0] 
-
-        results = []
-        for card_index in range(len(self.cardValues)):
-            if probabilities[card_index] > 0:
-                card_value = self.cardValues[card_index]
-                if total_card_value_in_hand + card_value > self.threshold:
-                    results.append(((total_card_value_in_hand + card_value, None, None), probabilities[card_index], 0))
-                else:
-                    deck_card_counts_list = list(deck_card_counts)
-                    deck_card_counts_list[card_index] -= 1
-                    if sum(deck_card_counts_list) > 0:
-                        results.append(((total_card_value_in_hand + card_value, None, tuple(deck_card_counts_list)), probabilities[card_index], 0))
-                    else:
-                        results.append(((total_card_value_in_hand + card_value, None, None), probabilities[card_index], total_card_value_in_hand + card_value))
-      
-        return results
+        return []
         # END_YOUR_CODE
 
     def discount(self):
