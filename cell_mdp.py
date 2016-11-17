@@ -1,7 +1,6 @@
 import collections
 import csv
 import numpy
-import ingest_data
 from ingest_data import ingest,get_states,get_vec,normalize_spread
 
 
@@ -14,9 +13,8 @@ class CellMDP(util.MDP):
         peekCost: how much it costs to peek at the next card
         """
         self.data, self.genes = ingest(cells_file, types_file, genes_file)
-        self.cell_dict = get_states(cells_file)
         self.discount = discount
-        self.spread_weights = normalize_spread(cells_file,genes_file):
+        self.spread_weights = normalize_spread(cells_file, genes_file):
 
     # Return the start state.
     # Look at this function to learn about the state representation.
@@ -52,22 +50,25 @@ class CellMDP(util.MDP):
         return []
         # END_YOUR_CODE
 
+    def transition_probabilities(self, current_state, next_states_set):
+        inverse_distances = collections.defaultdict(float)
+        for next_state in next_states_set:
+            inverse_distances[next_state] = self.transition_probability(current_state[0], next_state[0])
+        normalizer = sum(inverse_distances.itervalues())
+        transition_probabilities = collections.defaultdict(float)
+        for next_state, inverse_distance in inverse_distances.iteritems():
+            transition_probabilities[next_state] = inverse_distance/normalizer
+        return transition_probabilities
+
     # This function takes in the names of our two cells of interest and then computes a weighted euclidean distance. 
     def transition_probability(self, cell1, cell2):
         spread_weights = self.spread_weights
         cell_dict = self.cell_dict
-        spread_weights = self.spread_weights
-
-        cell1_row = cell_dict[cell1]
-        cell2_row = cell_dict[cell2]
 
         dist_sum = 0
-
-        for gene_1 in cell1_row:
-            gene_1_val = cell1_row[gene_1]
-            gene_2_val = cell2_row[gene_1]
-            alpha = spread_weights[gene_1]
-            dist_sum += ((gene_1_val - gene_2_val)**2)/alpha
+        for i in range(len(cell1)):
+            alpha_i = spread_weights[self.genes[i]]
+            dist_sum += ((cell1[i] - cell2[i])**2)/alpha_i
 
         return 1/(numpy.sqrt(dist_sum))
 
