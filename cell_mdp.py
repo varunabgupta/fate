@@ -17,17 +17,10 @@ class CellMDP(util.MDP):
         self.spread_weights = normalize_spread(cells_file, genes_file):
 
     # Return the start state.
-    # Look at this function to learn about the state representation.
-    # The first element of the tuple is the sum of the cards in the player's
-    # hand.
-    # The second element is the index (not the value) of the next card, if the player peeked in the
-    # last action.  If they didn't peek, this will be None.
-    # The final element is the current deck.
     def startState(self):
         return (0, None, (self.multiplicity,) * len(self.cardValues))  # total, next card (if any), multiplicity for each card
 
     # Return set of actions possible from |state|.
-    # You do not need to modify this function.
     # All logic for dealing with end states should be done in succAndProbReward
     def actions(self, state):
         cell_type = state(1)
@@ -36,19 +29,35 @@ class CellMDP(util.MDP):
         return ['Stay', 'Evolve']
 
     # Return a list of (newState, prob, reward) tuples corresponding to edges
-    # coming out of |state|.  Indicate a terminal state (after quitting or
-    # busting) by setting the deck to None. 
+    # coming out of |state|.  
     # When the probability is 0 for a particular transition, don't include that 
     # in the list returned by succAndProbReward.
     def succAndProbReward(self, state, action):
-        # BEGIN_YOUR_CODE (our solution is 53 lines of code, but don't worry if you deviate from this)
         gene_profile, cell_type = state
 
         if cell_type == '4G' or cell_type == '4GF':
             return []
 
-        return []
-        # END_YOUR_CODE
+        results = []
+        if action == 'Stay':
+            next_states_set = self.data[cell_type]
+            next_states_set.remove(state) # remove current state from next possible states
+            transition_probabilities = self.transition_probabilities(state, next_states_set)
+            for next_state, transition_probability in transition_probabilities.iteritems():
+                results.append((next_state, transition_probability, 1))
+            next_states_set.add(state) # add back in
+            return results
+
+        # Evolve case, modify later to be systematic and generalized
+        if state == 'PS':
+            return results
+        if state == 'NP':
+            return results
+        if state == 'HF':
+            if action == '4G':
+                return results
+            if action == '4GF':
+                return results
 
     def transition_probabilities(self, current_state, next_states_set):
         inverse_distances = collections.defaultdict(float)
