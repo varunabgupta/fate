@@ -34,32 +34,26 @@ def get_vec(vec_filename):
 			info.append(row[0])
 	return info
 
-def normalize_spread(cells_filename,genes_filename):
+def normalize_spread(cells_filename, genes_filename):
 	data_table = get_states(cells_filename)
 	genes_list = get_vec(genes_filename)
 
 	# This initializes our gene expression dictionary, which will map each gene to a list of all expression values in our data set.
-	gene_expression_dict = {}
-	for gene in genes_list:
-		gene_expression_dict[gene] = []
+	gene_expression_dict = collections.defaultdict(list)
 
 	# This loops through each cell in our data table, loops through each gene in each cell, and then adds the gene expression value to the gene expression dictionary for each gene. 
-	for i in range(0, len(data_table)):
-		cell = data_table[i]
+	for cell in data_table:
 		for gene in cell:
-			# Can remove this once bug is fixed #
-			if gene != "Cell":
-				gene_expression_dict[gene].append(float(cell[gene]))
-	return compute_spread_weights(gene_expression_dict,genes_list)
+			gene_expression_dict[gene].append(float(cell[gene]))
+	return compute_spread_weights(gene_expression_dict, genes_list)
 
-def compute_spread_weights(gene_expression_dict,genes_list):
+def compute_spread_weights(gene_expression_dict, genes_list):
 	spread_dict = {}
 	spread_weight = []
 
 	# This takes every gene's expression value list and computes the standard deviation.
-	for gene in gene_expression_dict:
-		value_set = gene_expression_dict[gene]
-		spread_weight.append(numpy.std(value_set))
+	for gene in genes_list:
+		spread_weight.append(numpy.std(gene_expression_dict[gene]))
 
 	# Normalize
 	spread_weight = spread_weight/sum(spread_weight)
