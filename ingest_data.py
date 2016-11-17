@@ -22,6 +22,7 @@ def get_states(cells_filename):
 	with open(cells_filename, 'rU') as csvfile:
 		reader = csv.DictReader(csvfile)
 		for row in reader:
+			row.pop('Cell') # remove cell name
 			data_table.append(row)
 	return data_table
 
