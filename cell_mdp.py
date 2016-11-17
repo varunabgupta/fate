@@ -34,11 +34,13 @@ class CellMDP(util.MDP):
     # in the list returned by succAndProbReward.
     def succAndProbReward(self, state, action):
         gene_profile, cell_type = state
-
-        if cell_type == '4G' or cell_type == '4GF':
-            return []
-
         results = []
+
+        # end states
+        if cell_type == '4G' or cell_type == '4GF':
+            return results
+
+        # stay case
         if action == 'Stay':
             next_states_set = self.data[cell_type]
             next_states_set.remove(state) # remove current state from next possible states
@@ -50,13 +52,29 @@ class CellMDP(util.MDP):
 
         # Evolve case, modify later to be systematic and generalized
         if state == 'PS':
+            next_states_set = self.data['NP']
+            transition_probabilities = self.transition_probabilities(state, next_states_set)
+            for next_state, transition_probability in transition_probabilities.iteritems():
+                results.append((next_state, transition_probability, -3))
             return results
         if state == 'NP':
+            next_states_set = self.data['HF']
+            transition_probabilities = self.transition_probabilities(state, next_states_set)
+            for next_state, transition_probability in transition_probabilities.iteritems():
+                results.append((next_state, transition_probability, -5))
             return results
         if state == 'HF':
             if action == '4G':
+                next_states_set = self.data['4G']
+                transition_probabilities = self.transition_probabilities(state, next_states_set)
+                for next_state, transition_probability in transition_probabilities.iteritems():
+                    results.append((next_state, transition_probability, 15))
                 return results
             if action == '4GF':
+                next_states_set = self.data['4GF']
+                transition_probabilities = self.transition_probabilities(state, next_states_set)
+                for next_state, transition_probability in transition_probabilities.iteritems():
+                    results.append((next_state, transition_probability, 14))
                 return results
 
     def transition_probabilities(self, current_state, next_states_set):
