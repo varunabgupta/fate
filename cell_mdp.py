@@ -26,8 +26,7 @@ class CellMDP(util.MDP):
         cell_type = state(1)
         if cell_type == 'HF':
             return ['Stay', '4G', '4GF']
-        if cell_type == '4G' or cell_type == '4GF':
-            return ['Stay']
+        return ['Stay', 'Evolve']
 
     # Return a list of (newState, prob, reward) tuples corresponding to edges
     # coming out of |state|.  Indicate a terminal state (after quitting or
