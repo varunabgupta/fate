@@ -12,7 +12,7 @@ def ingest(cells_filename, types_filename, genes_filename):
 		cell_gene_profile = data_table[i]
 		cell_gene_state = []
 		for gene in genes_list:
-			cell_gene_state.append(cell_gene_profile[gene])
+			cell_gene_state.append(float(cell_gene_profile[gene]))
 		data_dict[cell_type].add((tuple(cell_gene_state), cell_type))
 	return (data_dict, genes_list)
 
