@@ -1,22 +1,47 @@
 import collections
 import csv
 import numpy
+import math
 
 def ingest(cells_filename, types_filename, genes_filename):
 	data_table = get_states(cells_filename)
 	types_list = get_vec(types_filename)
 	genes_list = get_vec(genes_filename)
+
 	data_dict = collections.defaultdict(set)
+	gene_expression_dict = collections.defaultdict(list)
+
 	for i in range(0, len(data_table)):
 		cell_type = types_list[i]
 		cell_gene_profile = data_table[i]
 		cell_gene_state = []
 		for gene in genes_list:
 			cell_gene_state.append(float(cell_gene_profile[gene]))
+			gene_expression_dict[gene].append(float(cell_gene_profile[gene]))
 		data_dict[cell_type].add((tuple(cell_gene_state), cell_type))
-	return (data_dict, genes_list)
 
-# THERE IS A BUG HERE: when iterating through, it treats the "Cell" column, the first one, as a gene and adds its value accordingly. 
+	spread_weights = compute_spread_weights(gene_expression_dict, genes_list)
+	transition_probabilities_dict = collections.defaultdict(dict)
+
+	for cell_type, current_set in data_dict.iteritems():
+		if cell_type == 'PS':
+			next_set = data_dict['NP'].union(current_set)
+		if cell_type == 'NP':
+			next_set = data_dict['HF'].union(current_set)
+		if cell_type == 'HF':
+			next_set = data_dict['4G'].union(current_set)
+			next_set = next_set.union(data_dict['4GF'])
+		for cell_state in current_set:
+			if cell_type == '4G' or cell_type == '4GF':
+				next_set = {(cell_state[0], 'FATE')}
+			else: 
+				next_set.remove(cell_state)
+			transitions = transition_probabilities(cell_state, next_set, spread_weights, genes_list)
+			transition_probabilities_dict[cell_state] = transitions
+			if cell_type != '4G' and cell_type != '4GF': next_set.add(cell_state)
+
+	return (data_dict, genes_list, transition_probabilities_dict)
+
 def get_states(cells_filename):
 	data_table = []
 	with open(cells_filename, 'rU') as csvfile:
@@ -34,19 +59,6 @@ def get_vec(vec_filename):
 			info.append(row[0])
 	return info
 
-def normalize_spread(cells_filename, genes_filename):
-	data_table = get_states(cells_filename)
-	genes_list = get_vec(genes_filename)
-
-	# This initializes our gene expression dictionary, which will map each gene to a list of all expression values in our data set.
-	gene_expression_dict = collections.defaultdict(list)
-
-	# This loops through each cell in our data table, loops through each gene in each cell, and then adds the gene expression value to the gene expression dictionary for each gene. 
-	for cell in data_table:
-		for gene in cell:
-			gene_expression_dict[gene].append(float(cell[gene]))
-	return compute_spread_weights(gene_expression_dict, genes_list)
-
 def compute_spread_weights(gene_expression_dict, genes_list):
 	spread_dict = {}
 	spread_weight = []
@@ -63,22 +75,25 @@ def compute_spread_weights(gene_expression_dict, genes_list):
 		gene = genes_list[i]
 		spread_dict[gene] = spread_weight[i]
 
+	print(spread_dict)
+
 	return spread_dict
 
+# This function takes in the names of our two cells of interest and then computes a weighted euclidean distance. 
+def inverse_distance(cell1, cell2, spread_weights, genes_list):
+    dist_sum = 0
+    for i in range(len(cell1)):
+        alpha_i = spread_weights[genes_list[i]]
+        dist_sum += ((cell1[i] - cell2[i])**2)/alpha_i
+    dist_sum = 1 if dist_sum == 0 else dist_sum
+    return 1/(math.sqrt(dist_sum))
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+def transition_probabilities(current_state, next_states_set, spread_weights, genes_list):
+    inverse_distances = collections.defaultdict(float)
+    for next_state in next_states_set:
+        inverse_distances[next_state] = inverse_distance(current_state[0], next_state[0], spread_weights, genes_list)
+    normalizer = sum(inverse_distances.itervalues())
+    transition_probabilities = collections.defaultdict(float)
+    for next_state, inverse_dist in inverse_distances.iteritems():
+        transition_probabilities[next_state] = inverse_dist/normalizer
+    return transition_probabilities
