@@ -44,7 +44,9 @@ class ValueIteration(MDPAlgorithm):
             for state in mdp.states:
                 newV[state] = max(computeQ(mdp, V, state, action) for action in mdp.actions(state))
             numIters += 1
-            if max(abs(V[state] - newV[state]) for state in mdp.states) < epsilon:
+            mx = max(abs(V[state] - newV[state]) for state in mdp.states)
+            print(mx)
+            if mx < epsilon:
                 V = newV
                 break
             V = newV
