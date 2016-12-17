@@ -35,65 +35,25 @@ cellcol=colscells[colnb]
 
 
 ```{r}
+colnames(Raw)
 Raw["Type"] <- NA
 Raw$Type <- celltypes
-Pred <- read.csv("~/workspace/fate/poo.csv")
+Pred <- read.csv("~/workspace/fate/results/norm/optimal_policy_transformed.csv")
 total <- merge(x = Raw, y = Pred, by = 1:46, all.x = TRUE)
 
-fix_fate <- function(profile) {
-  if (is.na(profile[48])) {
+fix_decision <- function(profile) {
+  if (profile[47] == '4GF' || profile[47] == '4G') {
     return(profile[47])
   }
-  return(profile[48])
+  return(paste(profile[47], profile[48], sep = "->"))
 }
 
-total[, 48] <- apply(total, 1, fix_fate)
+total[, 48] <- apply(total, 1, fix_decision)
 
 pr.raw <- prcomp(total[, 1:46], scale = FALSE)
 pp <- ggbiplot(pr.raw, obs.scale = 1, var.scale = 1, scale = 1, groups = total[, 47], ellipse = TRUE, circle = TRUE)
 pp
+ggbiplot(pr.raw, obs.scale = 1, var.scale = 1, scale = 1, groups = total[, c("Decision")], ellipse = TRUE, circle = TRUE)
 
-#centroids
-fourg <- total[total[, "Type"] == "4G",1:46]
-fourgf <- total[total[, "Type"] == "4GF",1:46]
-
-fourg_centroid <- colMeans(fourg)
-fourgf_centroid <- colMeans(fourgf)
-
-assign <- function(profile) {
-  dist_fourg <- sqrt(sum((profile - fourg_centroid)^2))
-  dist_fourgf <- sqrt(sum((profile - fourgf_centroid)^2))
-  return(if(dist_fourg < dist_fourgf) "4G" else "4GF")
-}
-assignments = apply(total[, 1:46], 1, assign)
-
-
-endothelial <- c("Cdh5", "Erg", "HoxB4", "Sox7", "Sox17")
-erythroid <- c("Gata1", "Gfi1b", "HbbbH1", "Ikaros", "Myb", "Nfe2")
-fourgf_rel <- t(data.frame(fourgf_centroid))
-fourg_rel <- t(data.frame(fourg_centroid))
-
-erythroid_distance <- function(profile) {
-  return(sqrt(sum((profile - fourgf_rel[,erythroid])^2)))
-}
-endothelial_distance <- function(profile) {
-  return(sqrt(sum((profile - fourg_rel[,endothelial])^2)))
-}
-
-erythroid_distances <- apply(total[,erythroid], 1, erythroid_distance)
-endothelial_distances <- apply(total[,endothelial], 1, endothelial_distance)
-assignment_error <- (sum(erythroid_distances[assignments == "4G"]) + sum(endothelial_distances[assignments=="4GF"]))/nrow(Raw)
-non_assignment_error <- (sum(erythroid_distances[assignments == "4GF"]) + sum(endothelial_distances[assignments == "4G"]))/nrow(total)
-
-assignment_error_s <- (sum(erythroid_distances[total[,"Fate"] == "4G"]) + sum(endothelial_distances[total[,"Fate"] == "4GF"]))/nrow(total)
-non_assignment_error_s <- (sum(erythroid_distances[total[, "Fate"] == "4GF"]) + sum(endothelial_distances[total[, "Fate"] == "4G"]))/nrow(total)
-
-
-ggbiplot(pr.raw, obs.scale = 1, var.scale = 1, scale = 1, groups = assignments, ellipse = TRUE, circle = TRUE)
-ggbiplot(pr.raw, obs.scale = 1, var.scale = 1, scale = 1, groups = total[, c("Fate")], ellipse = TRUE, circle = TRUE)
 
 ```
-
-Baseline: the mean assignment error is `r assignment_error`, and the mean non-assignment error is `r non_assignment_error`. Ideally, the assignment error should be much smaller than the non-assignment error, which would indicate that a cell is much closer to its assigned centroid in terms of the transcription factors relevant to that fate than to the centroid it was not assigned to in terms of transcription factors relevant to the fate it did not achieve.
-
-Search: the mean assignment error is `r assignment_error_s`, and the mean non-assignment error is `r non_assignment_error_s`. 

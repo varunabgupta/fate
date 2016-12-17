@@ -3,7 +3,28 @@ import csv
 import numpy
 import math
 
-def ingest(cells_filename, types_filename, genes_filename):
+def ingest_mdp(cells_filename, types_filename, genes_filename):
+	data_table = get_states(cells_filename)
+	types_list = get_vec(types_filename)
+	genes_list = get_vec(genes_filename)
+
+	data_dict = collections.defaultdict(set)
+	gene_expression_dict = collections.defaultdict(list)
+	rewards = collections.defaultdict(float)
+
+	for i in range(0, len(data_table)):
+		cell_type = types_list[i]
+		cell_gene_profile = data_table[i]
+		cell_gene_state = []
+		for gene in genes_list:
+			cell_gene_state.append(float(cell_gene_profile[gene]))
+			gene_expression_dict[gene].append(float(cell_gene_profile[gene]))
+		data_dict[cell_type].add((tuple(cell_gene_state), cell_type))
+
+	spread_weights = compute_spread_weights(gene_expression_dict, genes_list)
+	return (data_dict, genes_list, spread_weights)
+
+def ingest_search(cells_filename, types_filename, genes_filename):
 	data_table = get_states(cells_filename)
 	types_list = get_vec(types_filename)
 	genes_list = get_vec(genes_filename)
