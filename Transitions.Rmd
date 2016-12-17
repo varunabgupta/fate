@@ -1,0 +1,23 @@
+---
+title: "Transitions"
+author: "Gupta & Anand"
+date: "12/16/2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r transitions, echo=FALSE}
+require(pheatmap)
+Transitions <- read.csv("~/workspace/fate/results/norm/fate_transitions_ps_norm.csv", row.names = NULL)
+row.names(Transitions) <- c("PS->NP (4G)", "NP->HF (4G)", "HF->4G", "PS->NP (4GF)", "NP->HF (4GF)", "HF->4GF")
+pheatmap(data.matrix(Transitions[1:3, c(-1, -2)]), cluster_row = FALSE, cluster_col = FALSE, color = heat.colors(12))
+pheatmap(t(data.matrix(Transitions[1:3, c(4, 5, 8, 9, 10, 11, 12, 16, 18, 19, 22, 24, 35, 36, 37, 43, 44)])), cluster_row = FALSE, cluster_col = FALSE, color = heat.colors(12))
+pheatmap(data.matrix(Transitions[4:6, c(-1, -2)]), cluster_row = FALSE, cluster_col = FALSE, color = heat.colors(12))
+pheatmap(t(data.matrix(Transitions[4:6, c(4, 5, 8, 9, 10, 11, 12, 16, 18, 19, 22, 24, 35, 36, 37, 43, 44)])), cluster_row = FALSE, cluster_col = FALSE, color = heat.colors(12))
+
+```
+
